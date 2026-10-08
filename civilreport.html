@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, viewport-fit=cover">
+    <title>CivicGuard - Citizen Report Portal</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+
+    <header class="app-header">
+        <div class="brand"><h1 class="brand-title">CivicGuard</h1></div>
+        <div class="header-actions location-badge">
+            <div class="location-pill" aria-label="Local area">
+                <svg class="location-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
+                </svg>
+                <span class="location-text">Local Area: <strong class="area">unset</strong></span>
+            </div>
+            <button id="auth-btn" class="profile-avatar" aria-label="Edit profile">
+                <img id="profile-avatar" src="https://via.placeholder.com/80" alt="User Profile" class="avatar-img">
+            </button>
+        </div>
+    </header>
+
+    <a href="tel:112" class="emergency-banner" data-emergency="112">
+        <div class="marquee-track"><span>EMERGENCY SOS: Tap to call local emergency service | Available 24/7 | Direct Dispatch Line</span></div>
+    </a>
+
+
+
+
+    <main class="content-container">
+        
+<!-- Feed Section -->
+        <section id="feed-view" class="view active-view">
+            <div class="filter-bar" aria-label="Filter reports by category">
+                <button class="filter-btn active" data-category="all">All</button>
+                <button class="filter-btn" data-category="security">Crime</button>
+                <button class="filter-btn" data-category="power">Power</button>
+                <button class="filter-btn" data-category="infrastructure">Hazard</button>
+            </div>
+            <div id="reports-list" class="feed">
+                
+                        <div class="report-card-modern" onclick="openDetail('https://images.unsplash.com/photo-1518173946687-a4c8892bbd9f?q=80&w=800&auto=format&fit=crop', 'Major Pothole causing traffic on Main Expressway', 'This pothole has been getting worse over the last week and is now causing severe traffic build-up on the main expressway heading towards the central business district. Drivers are swerving to avoid it, which is creating a serious hazard.', 'Abdul Malik')">
+            
+            
+            <div class="report-content">
+                <div class="report-header-row">
+                    <img class="author-avatar" src="https://ui-avatars.com/api/?name=Abdul+Malik&background=random" alt="Avatar">
+                    <span class="author-name">Abdul Malik</span>
+                    <span class="category-badge cat-infrastructure">Hazard</span>
+                </div>
+                <h3 class="report-title">Major Pothole causing traffic on Main Expressway</h3>
+                <div class="report-meta">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <span style="color: #16A34A; display:flex; align-items:center; gap:4px;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+                            12 Verified
+                        </span>
+                        <span>Lagos, Ikeja</span>
+                    </div>
+                    <span>12 min ago</span>
+                </div>
+            </div>
+        </div>
+                
+            </div>
+        </section>
+
+<!-- Map Section -->
+        <section id="map-view" class="view">
+            <div id="map"></div>
+            <div id="map-offline-state" class="map-offline-state">Coming soon!!!!!!</div>
+        </section>
+
+<!-- Report section -->
+        <section id="report-view" class="view">
+            <div class="report-card">
+                <h3>Report An Incident </h3>
+                <p class="settings-hint">Submit safety concerns or local hazards to alert nearby residents.</p>
+                <form id="report-form">
+                    <div class="form-group">
+                        <label for="report-category">Category of Incident</label>
+                        <select id="report-category" class="settings-select" required>
+                            <option value="security">Crime / Safety Issue</option>
+                            <option value="infrastructure" selected>Hazard / Infrastructure</option>
+                            <option value="sanitation">Sanitation / Environment</option>
+                            <option value="power">Power / Utilities</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="report-title">Report Title</label>
+                        <input type="text" id="report-title" placeholder="e.g. Broken streetlight on main road" required>
+                    </div>
+
+
+                    <div class="form-group report-location-block">
+                        <h4>Incident Location</h4>
+                        <p class="settings-hint">Choose one way to set the incident location.</p>
+                        <div class="location-method-choice" role="group" aria-label="Location method">
+                            <button type="button" id="choose-gps-location" class="location-method-btn active" aria-pressed="true">Use Current GPS</button>
+                            <button type="button" id="choose-manual-location" class="location-method-btn" aria-pressed="false">Enter Address Manually</button>
+                        </div>
+                        <div id="gps-location-panel" class="location-method-panel">
+                            <button type="button" id="btn-detect-location" class="btn-secondary">Use Current GPS Location</button>
+                            <p id="gps-address-confirmation" class="gps-address-confirmation">Your detected address will appear below after GPS is found.</p>
+                        </div>
+                        <div class="report-address-fields">
+                            <label for="report-state">State</label>
+                            <input type="text" id="report-state" placeholder="e.g. Lagos" autocomplete="address-level1" required>
+                            <label for="report-lga">Local Government Area (LGA)</label>
+                            <input type="text" id="report-lga" placeholder="e.g. Ikeja" required>
+                            <label for="report-street">Street / Landmark</label>
+                            <input type="text" id="report-street" placeholder="Street or nearby landmark" autocomplete="street-address" required>
+                        </div>
+                        <!--small id="manual-location-hint" class="settings-hint hidden">We use this address to find coordinates for the report pin.</small>
+                        <small id="location-status" class="settings-hint" aria-live="polite">Use GPS to detect the address automatically.</small>
+                        <div id="report-map" aria-label="Choose the reported incident location on the map"></div>
+                        <label for="report-coords">Latitude, Longitude</label>
+                        <input type="text" id="report-coords" class="coordinates-input" placeholder="Set location to get coordinates" readonly required -->
+                    </div>
+
+
+
+                    <div class="form-group">
+                        <label for="report-description">Description</label>
+                        <textarea id="report-description" rows="3" placeholder="Provide details about what happened..." required></textarea>
+                    </div>
+                    <!--div class="form-group ">
+                        <label for="report-media message">Attach Photo or Video (Optional)</label>
+                        <input type="file" id="report-media" accept="image/*,video/*">
+                        <div id="media-preview-container"></div>
+                    </div -->
+                    <p id="report-submit-status" class="settings-hint" role="status" aria-live="polite"></p>
+                    <button type="button" id="report-sign-in-btn" class="btn-secondary hidden">Sign In to Report</button>
+                    <button type="submit" id="submit-report-btn" class="btn-primary">Submit Report</button>
+                </form>
+            </div>
+        </section>
+
+<!-- Notification section-->
+        <section id="notifications-view" class="view">
+            <div class="profile-card">
+                <h3>Community Alerts</h3>
+                <p class="settings-hint">New local alerts will appear here.</p>
+                <div id="alerts-list" class="feed">   
+
+                    <div class="notification-card unread">
+                        <img class="notif-avatar" src="https://ui-avatars.com/api/?name=Jane+Doe&background=random&color=fff" alt="Avatar">
+                        <div class="notif-content">
+                            <p class="notif-text"><strong>Jane Doe</strong> from <strong>Ikeja</strong> has posted a new Security report.</p>
+                            <span class="notif-time">2m ago</span>
+                        </div>
+                        <div class="unread-dot"></div>
+                    </div>
+        
+                </div>
+            </div>
+        </section>
+
+
+
+<!-- Profile section -->
+        <section id="profile-view" class="view">
+            <div class="profile-card">
+                <div class="profile-header">
+                    <img id="profile-avatar-display" class="avatar-img" src="https://via.placeholder.com/90" alt="User profile">
+                    <h3 id="profile-name">Anonymous Citizen</h3>
+                    <p id="profile-email" class="profile-subtext">Email: Not set</p>
+                    <p id="profile-phone" class="profile-subtext">Phone: Not set</p>
+                    <p id="profile-state" class="profile-subtext">State: Not set</p>
+                    <p id="profile-lga" class="profile-subtext">LGA: Not set</p>
+                    <p id="profile-street" class="profile-subtext">Street: Not set</p>
+                    <button id="edit-profile-btn" class="btn-secondary" type="button">Edit Profile Info</button>
+                    <br>
+                    <button id="logout-btn" class="btn-secondary-danger" type="button">Log Out</button>
+                </div>
+                <hr class="divider">
+                <div class="profile-stats-grid">
+                    <div class="stat-card"><span id="stat-reports-count" class="stat-number">0</span><span class="stat-label">Reports Submitted</span></div>
+                    <div class="stat-card"><span id="stat-confirmations-count" class="stat-number">0</span><span class="stat-label">Community Votes</span></div>
+                </div>
+                <hr class="divider">
+                <div class="settings-section">
+                    <h4>Your Submitted Reports</h4>
+                    <div id="user-reports-list" class="feed">
+                        
+                        
+                    <div class="my-report-card" onclick="openDetail('https://staticmap.openstreetmap.de/staticmap.php?center=6.5244,3.3792&zoom=15&size=400x400&maptype=mapnik&markers=6.5244,3.3792,red-pushpin', 'Streetlights not working on Awolowo road', 'It is completely dark at night.', 'You')">
+                        <div class="my-report-info">
+                            <div class="my-report-header">
+                                <span class="status-badge status-pending">Pending</span>
+                                <span class="my-report-time">Sep 28</span>
+                            </div>
+                            <h4 class="my-report-title">Streetlights not working on Awolowo road</h4>
+                            <div class="my-report-stats">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+                                0 Verified
+                            </div>
+                        </div>
+                    </div> 
+
+                        
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+
+
+
+
+
+
+
+
+    <!-- Bottom Navigation Bar-->
+    
+<nav class="bottom-nav" aria-label="Main Navigation">
+  <!-- Feed Tab -->
+  <button class="nav-btn active" onclick="switchTab('feed-view', this)">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+      <polyline points="9 22 9 12 15 12 15 22"/>
+    </svg>
+    <span class="nav-label">Feed</span>
+  </button>
+
+  <!-- Map Tab -->
+  <button class="nav-btn" onclick="switchTab('map-view', this)">
+     
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/>
+      <line x1="9" y1="3" x2="9" y2="18"/>
+      <line x1="15" y1="6" x2="15" y2="21"/>
+    </svg>
+    <span class="nav-label">Map</span>
+  </button>
+
+  <!-- Floating Report Button -->
+<div class="nav-fab-wrapper">
+  <button class="nav-btn create-btn fab-btn" onclick="switchTab('report-view', this)" aria-label="Report Incident">
+    <svg class="fab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/>
+      <line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+  </button>
+  <span class="nav-label fab-label">Report</span>
+</div>
+
+
+  <!-- Notifications Tab -->
+  <button class="nav-btn" onclick="switchTab('notifications-view', this)">
+    <div class="icon-wrapper">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+      </svg>
+      <span class="badge">1</span>
+    </div>
+    <span class="nav-label">Alerts</span>
+  </button>
+
+  <!-- Profile Tab -->
+  <button class="nav-btn" onclick="switchTab('profile-view', this)">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+      <circle cx="12" cy="7" r="4"/>
+    </svg>
+    <span class="nav-label">Profile</span>
+  </button>
+</nav>
+
+
+
+
+
+
+
+
+<!-- Sign-Up form -->
+    <div id="auth-modal" class="auth-overlay hidden">
+        
+        
+        <div class="auth-card">
+            <button id="close-auth-modal" class="close-modal-btn" type="button" aria-label="Close">&times;</button>
+            <div id="account-forms">
+                <h2 id="auth-heading">Create Account</h2>
+                <div class="auth-tabs">
+                    <button id="show-login-btn" class="auth-tab-btn" type="button">Login</button>
+                    <button id="show-signup-btn" class="auth-tab-btn active" type="button">Create Account</button>
+                </div>
+                <p id="auth-message" class="auth-message" role="status" aria-live="polite"></p>
+                
+                
+                
+                <!-- LOGIN FORM -->
+                <form id="login-form" class="auth-form hidden">
+                    <div class="form-group"><label for="login-email">Email</label><input type="email" id="login-email" autocomplete="email" required></div>
+                    <div class="form-group"><label for="login-password">Password</label><input type="password" id="login-password" autocomplete="current-password" required></div>
+                    <button id="login-submit" type="submit" class="btn-primary">login</button>
+                </form>
+                
+                
+                
+                
+                <!-- SIGN-UP FORM -->
+                <form id="signup-form" class="auth-form">
+                    <div class="form-group"><label for="signup-name">Full Name</label><input type="text" id="signup-name" autocomplete="name" required></div>
+                    <div class="form-group"><label for="signup-email">Email</label><input type="email" id="signup-email" autocomplete="email" required></div>
+                    <div class="form-group"><label for="signup-password">Password</label><input type="password" id="signup-password" autocomplete="new-password" minlength="6" required></div>
+                    <div class="form-group"><label for="signup-password-confirm">Confirm Password</label><input type="password" id="signup-password-confirm" autocomplete="new-password" minlength="6" required></div>
+                    <div class="form-group"><label for="signup-phone">Phone Number</label><input type="tel" id="signup-phone" autocomplete="tel" required></div>
+                    <div class="form-group"><label for="signup-state">State</label><input type="text" id="signup-state" autocomplete="address-level1" required></div>
+                    <div class="form-group"><label for="signup-lga">Local Government Area</label><input type="text" id="signup-lga" required></div>
+                    <div class="form-group"><label for="signup-street">Street / Landmark</label><input type="text" id="signup-street" autocomplete="street-address" required></div>
+                    <div class="form-group"><button id="signup-location-btn" type="button" class="btn-secondary">Save My Current Map Location -- <br> coming soon</button><small id="signup-location-status" class="settings-hint">Optional. Used to center the map if GPS is unavailable later.</small></div>
+                    <div class="form-group"><label for="signup-avatar">Profile Picture (Optional)</label><input type="file" id="signup-avatar" accept="image/*"></div>
+                    <button id="signup-submit" type="submit" class="btn-primary">Create Account</button>
+                </form>
+            </div>
+            
+            
+            
+            
+            
+            <form id="profile-form" class="auth-form hidden">
+                <h2>Your Citizen Profile</h2>
+                <p id="profile-message" class="auth-message" role="status" aria-live="polite"></p>
+                <div class="form-group"><label for="profile-name-input">Full Name</label><input type="text" id="profile-name-input" autocomplete="name" required></div>
+                <div class="form-group"><label for="profile-email-input">Account Email</label><input type="email" id="profile-email-input" readonly></div>
+                <div class="form-group"><label for="profile-phone-input">Phone Number</label><input type="tel" id="profile-phone-input" autocomplete="tel" required></div>
+                <div class="form-group"><label for="profile-state-input">State</label><input type="text" id="profile-state-input" autocomplete="address-level1" required></div>
+                <div class="form-group"><label for="profile-lga-input">Local Government Area</label><input type="text" id="profile-lga-input" required></div>
+                <div class="form-group"><label for="profile-street-input">Street / Landmark</label><input type="text" id="profile-street-input" autocomplete="street-address" required></div>
+                <div class="form-group"><button id="profile-location-btn" type="button" class="btn-secondary">Update Saved Map Location</button><small id="profile-location-status" class="settings-hint">Optional. Used to center the map if GPS is unavailable later.</small></div>
+                <div class="form-group"><label for="profile-avatar-input">Profile Picture (Optional)</label><input type="file" id="profile-avatar-input" accept="image/*"></div>
+                <button id="save-profile-btn" type="submit" class="btn-primary">Save Profile</button>
+            </form>
+        </div>
+    </div>
+
+
+
+
+
+
+
+    <!-- Full-Screen Detail Overlay — populated by window.openReportDetail() in feed.js -->
+    <div id="detail-overlay" class="detail-overlay">
+        <div class="detail-top-bar">
+            <button class="icon-btn" onclick="window.closeDetail()" aria-label="Back">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <button class="icon-btn" aria-label="Bookmark">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+            </button>
+        </div>
+        <div id="detail-hero" class="detail-hero"></div>
+        <div class="detail-sheet">
+            <div class="detail-sheet-author">
+                <img id="detail-avatar" src="" alt="Author avatar">
+                <div class="detail-sheet-author-info">
+                    <span id="detail-author" class="detail-sheet-name"></span>
+                    <span id="detail-time" class="detail-sheet-time"></span>
+                </div>
+            </div>
+            <h2 id="detail-title" class="detail-sheet-title"></h2>
+            <div id="detail-body" class="detail-sheet-body"></div>
+        </div>
+    </div>
+    
+    
+    
+    
+    
+    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="storage.js"></script>
+    <script src="profile.js"></script>
+    <script src="app.js"></script>
+    <script src="notifier.js"></script>
+    <script src="auth.js"></script>
+    <script src="location.js"></script>
+    <script src="feed.js"></script>
+    <script src="report.js"></script>
+
+</body>
+</html>
